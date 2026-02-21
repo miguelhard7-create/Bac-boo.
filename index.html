@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bac Bo Red - Ultimate VIP</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#8b0000">
+
+    <style>
+        :root {
+            --gold-gradient: linear-gradient(145deg, #ffd700, #b8860b);
+            --red-deep: #4a0000;
+            --red-table: radial-gradient(circle, #8b0000 0%, #300000 100%);
+            --dark-panel: #121212;
+            --shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Garamond', 'Segoe UI', serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .screen { display: none; width: 100vw; min-height: 100vh; flex-direction: column; align-items: center; }
+        .active-screen { display: flex; }
+
+        /* AUTH */
+        .auth-card {
+            background: var(--red-deep);
+            padding: 40px;
+            border-radius: 5px;
+            border: 2px solid #ffd700;
+            text-align: center;
+            margin-top: 100px;
+            box-shadow: var(--shadow);
+            width: 320px;
+        }
+
+        .auth-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid #444;
+            color: gold;
+            text-align: center;
+        }
+
+        /* HEADER */
+        .header {
+            width: 100%;
+            height: 70px;
+            background: #000;
+            border-bottom: 2px solid #b8860b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0; z-index: 100;
+        }
+
+        .game-container {
+            margin-top: 90px;
+            width: 95%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ROADMAP / GRAFICO */
+        .roadmap {
+            display: flex; gap: 8px; background: rgba(255,0,0,0.05); padding: 15px;
+            border-radius: 10px; margin-bottom: 20px; border: 1px solid #4a0000;
+            width: 100%; justify-content: center; box-sizing: border-box;
+        }
+
+        .history-dot {
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: bold; color: #fff;
+        }
+        .dot-PLAYER { background: #2196F3; border: 2px solid #0d47a1; }
+        .dot-BANKER { background: #f44336; border: 2px solid #b71c1c; }
+        .dot-TIE { background: #4CAF50; border: 2px solid #1b5e20; }
+
+        /* TABLE */
+        .casino-table {
+            width: 100%; background: var(--red-table); border: 12px solid #3d2b1f;
+            border-radius: 150px; padding: 40px; position: relative;
+            box-sizing: border-box; margin-bottom: 30px;
+        }
+
+        .dice-area { display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; }
+        .die-slot { background: rgba(0,0,0,0.4); padding: 20px; border-radius: 15px; text-align: center; }
+        .die {
+            width: 70px; height: 70px; background: #fff; color: #000;
+            border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; font-weight: bold; margin: 5px;
+        }
+
+        .bet-grid { display: flex; justify-content: center; gap: 20px; width: 100%; }
+        .bet-box {
+            flex: 1; height: 120px; border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 10px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer;
+            background: rgba(255,255,255,0.03); transition: 0.3s;
+        }
+        .bet-box.active { border: 3px solid #ffd700; background: rgba(255,215,0,0.2); }
+
+        .chips-tray { display: flex; gap: 10px; padding: 15px; background: #111; border-radius: 50px; margin: 20px 0; }
+        .chip {
+            width: 55px; height: 55px; border-radius: 50%; border: 3px dashed rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;
+        }
+        .chip.selected { transform: scale(1.1); border: 3px solid #fff; box-shadow: 0 0 15px gold; }
+
+        .admin-panel { width: 100%; background: #0a0a0a; border: 1px solid #b8860b; padding: 20px; margin-top: 40px; border-radius: 10px; box-sizing: border-box; }
+        .admin-btn { background: #1a1a1a; color: #ffd700; border: 1px solid #ffd700; padding: 10px; cursor: pointer; }
+        
+        #win-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; font-weight: bold; color: gold; z-index: 50; display: none; text-align: center;
+        }
+        .rolling { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% {transform: translate(1px,1px)} 50% {transform: translate(-1px,-1px)} 100% {transform: translate(0,0)} }
+    </style>
+</head>
+<body onload="init()">
+
+    <div id="screen-license" class="screen active-screen">
+        <div class="auth-card">
+            <h1 style="color:gold;">BAC BO VIP</h1>
+            <input type="text" id="license-input" placeholder="COLE SUA KEY AQUI">
+            <button class="admin-btn" style="width:100%" onclick="checkLicense()">ENTRAR NO JOGO</button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="header">
+            <div style="color:gold; font-size:1.5rem;">BAC BO <small style="color:red">RED</small></div>
+            <a href="https://www.instagram.com/miguel_v_.7?igsh=MXgwb2pycW5obzRsNw==" target="_blank" style="color:#ffd700; text-decoration:none; font-size:0.9rem; border: 1px solid #ffd700; padding: 5px 10px; border-radius: 5px;">INSTAGRAM</a>
+            <div style="text-align:right">
+                <div style="color:#888; font-size:0.7rem;">SALDO</div>
+                <div style="color:gold; font-size:1.4rem; font-weight:bold;">R$ <span id="balance">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div id="roadmap" class="roadmap"></div>
+            <div id="status" style="margin-bottom: 10px; color: gold; font-weight: bold;">AGUARDANDO APOSTAS</div>
+            
+            <div class="casino-table">
+                <div id="win-msg"></div>
+                <div class="dice-area">
+                    <div class="die-slot">
+                        <small style="color: #2196F3;">JOGADOR</small><br>
+                        <div id="p1" class="die">?</div><div id="p2" class="die">?</div>
+                    </div>
+                    <div style="font-size: 2rem; color: gold;">VS</div>
+                    <div class="die-slot">
+                        <small style="color: #f44336;">BANCA</small><br>
+                        <div id="b1" class="die">?</div><div id="b2" class="die">?</div>
+                    </div>
+                </div>
+                <div class="bet-grid">
+                    <div class="bet-box" id="spot-PLAYER" onclick="placeBet('PLAYER')"><b>JOGADOR</b></div>
+                    <div class="bet-box" id="spot-TIE" onclick="placeBet('TIE')" style="flex:0.6;"><b style="color:#4CAF50">EMPATE</b></div>
+                    <div class="bet-box" id="spot-BANKER" onclick="placeBet('BANKER')"><b>BANCA</b></div>
+                </div>
+            </div>
+
+            <div class="chips-tray">
+                <div class="chip" style="background:#666;" onclick="selectChip(10, this)">10</div>
+                <div class="chip" style="background:#1b5e20;" onclick="selectChip(100, this)">100</div>
+                <div class="chip" style="background:#0d47a1;" onclick="selectChip(500, this)">500</div>
+                <div class="chip" style="background:#b71c1c;" onclick="selectChip(2000, this)">2k</div>
+                <div class="chip" style="background:#000; border-color:gold; color:gold" onclick="selectAllIn(this)">ALL IN</div>
+            </div>
+
+            <button class="admin-btn" onclick="undoBet()" style="border-radius:20px; padding: 5px 30px;">LIMPAR</button>
+
+            <div id="admin-panel" class="admin-panel" style="display:none;">
+                <h3 style="color:gold; margin:0 0 10px 0;">CENTRAL DO DONO</h3>
+                <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                    <button class="admin-btn" onclick="setForce('PLAYER')">FORÇAR P</button>
+                    <button class="admin-btn" onclick="setForce('TIE')">FORÇAR E</button>
+                    <button class="admin-btn" onclick="setForce('BANKER')">FORÇAR B</button>
+                    <span id="force-label" style="margin-left:10px; color:cyan;">Modo: Random</span>
+                </div>
+                <div id="user-list-admin"></div>
+            </div>
+            <div style="height:50px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserKey = null, balance = 0, currentBet = 0, selectedChip = 0, selectedSide = '', isRolling = false, forced = null;
+        let historyData = [];
+
+        function checkLicense() {
+            const input = document.getElementById('license-input').value.trim();
+            const savedBalances = JSON.parse(localStorage.getItem('gameBalances')) || {};
+            
+            if (input === "110211") {
+                currentUserKey = "110211";
+                balance = savedBalances["110211"] !== undefined ? savedBalances["110211"] : 1000000;
+                document.getElementById('admin-panel').style.display = 'block';
+                showScreen('screen-game');
+                updateUI();
+                updateAdminUserList();
+                startCycle();
+                return;
+            }
+
+            const db = JSON.parse(localStorage.getItem('cyberDB'));
+            let valid = false;
+            if (db) {
+                for (let u in db.users) {
+                    if (db.users[u].keys.some(k => k.code === input && k.status === 'Ativa')) {
+                        valid = true; break;
+                    }
+                }
+            }
+
+            if (valid) {
+                currentUserKey = input;
+                balance = savedBalances[input] !== undefined ? savedBalances[input] : 500;
+                document.getElementById('admin-panel').style.display = 'none';
+                showScreen('screen-game');
+                updateUI();
+                startCycle();
+            } else {
+                alert("Key inválida ou expirada.");
+            }
+        }
+
+        function updateAdminUserList() {
+            if (currentUserKey !== "110211") return;
+            const db = JSON.parse(localStorage.getItem('cyberDB'));
+            const savedBalances = JSON.parse(localStorage.getItem('gameBalances')) || {};
+            const listDiv = document.getElementById('user-list-admin');
+            listDiv.innerHTML = "";
+            if (!db) return;
+            for (let user in db.users) {
+                db.users[user].keys.forEach(k => {
+                    if (k.status === 'Ativa') {
+                        let currentBal = savedBalances[k.code] !== undefined ? savedBalances[k.code] : 500;
+                        listDiv.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:5px; background:#111; padding:5px; border:1px solid #333;">
+                            <span><b>KEY:</b> ${k.code}</span>
+                            <span>R$ ${currentBal.toLocaleString('pt-BR')} 
+                            <button onclick="addBalanceToKey('${k.code}')" style="background:green;color:white;border:none;cursor:pointer;margin-left:5px;">+5k</button></span>
+                        </div>`;
+                    }
+                });
+            }
+        }
+
+        function addBalanceToKey(key) {
+            if (currentUserKey !== "110211") return;
+            let savedBalances = JSON.parse(localStorage.getItem('gameBalances')) || {};
+            let currentBal = savedBalances[key] !== undefined ? savedBalances[key] : 500;
+            savedBalances[key] = currentBal + 5000;
+            localStorage.setItem('gameBalances', JSON.stringify(savedBalances));
+            updateAdminUserList();
+        }
+
+        function init() {
+            const options = ['PLAYER', 'BANKER', 'TIE', 'PLAYER', 'BANKER'];
+            for(let i=0; i<10; i++){ historyData.push(options[Math.floor(Math.random() * options.length)]); }
+            renderRoadmap();
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
+        }
+
+        function renderRoadmap() {
+            const container = document.getElementById('roadmap');
+            container.innerHTML = "";
+            historyData.slice(-12).forEach(res => {
+                const char = res === 'PLAYER' ? 'P' : (res === 'BANKER' ? 'B' : 'E');
+                container.innerHTML += `<div class="history-dot dot-${res}">${char}</div>`;
+            });
+        }
+
+        function selectChip(val, el) { selectedChip = val; document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
+        function selectAllIn(el) { selectedChip = balance; document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
+        
+        function updateUI() { 
+            document.getElementById('balance').innerText = balance.toLocaleString('pt-BR');
+            let savedBalances = JSON.parse(localStorage.getItem('gameBalances')) || {};
+            savedBalances[currentUserKey] = balance;
+            localStorage.setItem('gameBalances', JSON.stringify(savedBalances));
+        }
+
+        function setForce(res) { if(currentUserKey !== "110211") return; forced = res; document.getElementById('force-label').innerText = "Forçado: " + res; }
+
+        function placeBet(side) {
+            if(isRolling || selectedChip <= 0 || balance < selectedChip) return;
+            selectedSide = side; currentBet += selectedChip; balance -= selectedChip;
+            document.querySelectorAll('.bet-box').forEach(b => b.classList.remove('active'));
+            document.getElementById('spot-'+side).classList.add('active');
+            updateUI();
+        }
+
+        function undoBet() {
+            if(isRolling) return;
+            balance += currentBet; currentBet = 0; selectedSide = '';
+            document.querySelectorAll('.bet-box').forEach(b => b.classList.remove('active'));
+            updateUI();
+        }
+
+        function startCycle() {
+            let t = 10;
+            const timer = setInterval(() => {
+                if(t > 0) { document.getElementById('status').innerText = `APOSTAS: ${t}s`; t--; } 
+                else { clearInterval(timer); runRound(); }
+            }, 1000);
+        }
+
+        function runRound() {
+            isRolling = true;
+            document.getElementById('status').innerText = "SORTEANDO...";
+            document.querySelectorAll('.die').forEach(d => { d.classList.add('rolling'); d.innerText = "?"; });
+
+            setTimeout(() => {
+                document.querySelectorAll('.die').forEach(d => d.classList.remove('rolling'));
+                let p1, p2, b1, b2;
+                const r = () => Math.floor(Math.random() * 6) + 1;
+
+                if(forced === 'PLAYER') { p1=6; p2=6; b1=1; b2=1; }
+                else if(forced === 'BANKER') { p1=1; p2=1; b1=6; b2=6; }
+                else if(forced === 'TIE') { p1=3; p2=3; b1=3; b2=3; }
+                else { p1=r(); p2=r(); b1=r(); b2=r(); }
+
+                document.getElementById('p1').innerText = p1; document.getElementById('p2').innerText = p2;
+                document.getElementById('b1').innerText = b1; document.getElementById('b2').innerText = b2;
+
+                const win = (p1+p2) > (b1+b2) ? 'PLAYER' : ((b1+b2) > (p1+p2) ? 'BANKER' : 'TIE');
+                historyData.push(win);
+                renderRoadmap();
+
+                const msg = document.getElementById('win-msg');
+                msg.style.display = 'block';
+
+                let savedBalances = JSON.parse(localStorage.getItem('gameBalances')) || {};
+
+                if(selectedSide === win) {
+                    let gain = win === 'TIE' ? currentBet * 8 : currentBet * 2;
+                    balance += gain;
+                    msg.innerHTML = `<span style="color:lime">GANHOU<br>R$ ${gain}</span>`;
+                } else if(selectedSide !== '') {
+                    let masterBal = savedBalances["110211"] || 0;
+                    savedBalances["110211"] = masterBal + currentBet;
+                    localStorage.setItem('gameBalances', JSON.stringify(savedBalances));
+                    msg.innerHTML = `<span style="color:red">PERDEU</span>`;
+                }
+
+                forced = null;
+                if(document.getElementById('force-label')) document.getElementById('force-label').innerText = "Modo: Random";
+                
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                    currentBet = 0; selectedSide = ''; isRolling = false;
+                    document.querySelectorAll('.bet-box').forEach(b => b.classList.remove('active'));
+                    updateUI(); updateAdminUserList(); startCycle();
+                }, 3000);
+            }, 2000);
+        }
+    </script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log("Bac Bo SW: Ativo"))
+          .catch(err => console.log("Bac Bo SW: Erro", err));
+      }
+    </script>
+</body>
+</html>
